@@ -5,16 +5,43 @@ const app = express();
 
 // The Firebase Admin SDK to access Firestore.
 const admin = require('firebase-admin');
-admin.initializeApp();
 
-app.get('/api', function(req, res){
+admin.initializeApp({
+    credential: admin.credential.applicationDefault()
+  });
+
+  const db = admin.firestore();
+  
+
+app.get('/api', async function(req, res){
     // Grab the text parameter.
     const original = req.query.text;
     // Push the new message into Firestore using the Firebase Admin SDK.
-    const writeResult = admin.firestore().collection('messages').add({original: original});
+    const writeResult = await db.collection('messages').add({original: original});
     // Send back a message that we've successfully written the message
     res.json({result: `Message with ID: ${writeResult.id} added.`});
   });
+
+
+  
+app.get('/test', async function(req, res){
+    const docRef = await db.collection('users').doc('alovelace');
+
+    docRef.set({
+        first: 'Ada',
+        last: 'Lovelace',
+        born: 1815
+    });
+    res.send("succesfully created!");
+});
+
+app.get('/users', async(req, res) =>{
+    const snapshot = await db.collection('users').get();
+    snapshot.forEach((doc) => {
+        res.write(doc.data());
+      });
+    res.send();
+});
 
 exports.app = functions.https.onRequest(app);
 // Listens for new messages added to /messages/:documentId/original and creates an
